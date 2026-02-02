@@ -4,4 +4,4 @@ export PYTHONPATH=$PYTHONPATH:.
 if [ -d "venv" ]; then
     source venv/bin/activate
 fi
-uvicorn app.api:app --host 0.0.0.0 --port 8000
+uvicorn country_info_agent.api:app --host 0.0.0.0 --port 8000

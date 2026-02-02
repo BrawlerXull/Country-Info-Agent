@@ -1,7 +1,9 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from app.state import AgentState
-from app.nodes import identify_intent, invoke_tool, synthesize_answer
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
+from country_info_agent.utils.state import AgentState
+from country_info_agent.utils.nodes import identify_intent, invoke_tool, synthesize_answer
 
 def create_graph():
     """

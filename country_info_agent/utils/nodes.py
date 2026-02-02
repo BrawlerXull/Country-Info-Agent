@@ -1,15 +1,18 @@
+import logging
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.messages import SystemMessage, HumanMessage, trim_messages, AIMessage
 from langchain_core.runnables.config import RunnableConfig
 
-from app.state import AgentState
-from app.tools import fetch_country_info
-from app.utils import get_llm
+from country_info_agent.utils.state import AgentState
+from country_info_agent.utils.tools import fetch_country_info
+from country_info_agent.utils.common import get_llm
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
+
+logger = logging.getLogger(__name__)
 
 class IntentSchema(BaseModel):
     intent: str = Field(description="The user's intent. Must be one of: 'get_population', 'get_capital', 'get_currency', 'get_language', 'get_flag', 'general_info', 'comparison', 'unknown'")
@@ -52,6 +55,7 @@ async def identify_intent(state: AgentState, config: RunnableConfig):
         
         return {"intent": result.intent, "countries": result.countries}
     except Exception as e:
+        logger.error(f"Error in identify_intent: {e}", exc_info=True)
         return {"intent": "unknown", "countries": [], "error": str(e)}
 
 async def invoke_tool(state: AgentState, config: RunnableConfig):

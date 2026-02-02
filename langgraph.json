@@ -1,0 +1,7 @@
+{
+  "python_version": "3.11",
+  "graphs": {
+    "agent": "./country_info_agent/agent.py:graph"
+  },
+  "env": ".env"
+}
