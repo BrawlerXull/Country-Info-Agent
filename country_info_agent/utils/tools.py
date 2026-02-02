@@ -2,6 +2,7 @@ import httpx
 from typing import Dict, Any, Optional
 from langfuse import observe
 from async_lru import alru_cache
+from country_info_agent.config.settings import settings
 
 @alru_cache(maxsize=128)
 @observe(as_type="generation")
@@ -15,7 +16,7 @@ async def fetch_country_info(country_name: str) -> Dict[str, Any]:
     Returns:
         A dictionary containing country data or an error message.
     """
-    base_url = "https://restcountries.com/v3.1/name"
+    base_url = settings.rest_countries_base_url
     
     try:
         # Strategy 1: Attempt Exact Match

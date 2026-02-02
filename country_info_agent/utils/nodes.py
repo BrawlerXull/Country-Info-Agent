@@ -1,8 +1,6 @@
 import logging
-from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import JsonOutputParser
-from langchain_core.messages import SystemMessage, HumanMessage, trim_messages, AIMessage
+from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
 
 from country_info_agent.utils.state import AgentState
@@ -46,7 +44,8 @@ async def identify_intent(state: AgentState, config: RunnableConfig):
     ])
     
     # Use with_structured_output to force valid JSON matching our schema
-    structured_llm = llm.with_structured_output(IntentSchema)
+    # Use function_calling method for compatibility with gpt-3.5-turbo
+    structured_llm = llm.with_structured_output(IntentSchema, method="function_calling")
     chain = prompt | structured_llm
     
     try:

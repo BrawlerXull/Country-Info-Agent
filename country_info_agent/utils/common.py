@@ -1,4 +1,5 @@
 import os
+import logging
 from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from langfuse.langchain import CallbackHandler
@@ -7,30 +8,34 @@ load_dotenv()
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from openai import AuthenticationError, RateLimitError, APIError
+from country_info_agent.config.settings import settings
 
-def get_llm(temperature=0, model="gpt-3.5-turbo", max_tokens=None, tools=None):
+logger = logging.getLogger(__name__)
+
+def get_llm(temperature=0, model=None, max_tokens=None, tools=None):
     """
     Returns a ChatOpenAI model with a Gemini fallback.
     
     Args:
         temperature: The temperature for the model.
-        model: The primary OpenAI model to use.
+        model: The primary OpenAI model to use. Defaults to settings.openai_model.
         max_tokens: key argument for max tokens
         tools: Optional list of tools to bind to the models.
         
     Returns:
         A Runnable binding that attempts OpenAI first, then falls back to Gemini.
     """
+    # Use settings defaults if not provided
+    model = model or settings.openai_model
     
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+    if not settings.openai_api_key:
         raise ValueError("OPENAI_API_KEY not found in environment variables.")
 
     # Primary Model: OpenAI
     openai_params = {
         "model": model,
         "temperature": temperature,
-        "max_retries": 0 # Disable internal retries to allow fallback to trigger immediately
+        "max_retries": 0  # Disable internal retries to allow fallback to trigger immediately
     }
     if max_tokens:
         openai_params["max_tokens"] = max_tokens
@@ -38,12 +43,12 @@ def get_llm(temperature=0, model="gpt-3.5-turbo", max_tokens=None, tools=None):
     openai_model = ChatOpenAI(**openai_params)
     
     # Fallback Model: Google Gemini
-    # Usage of 1.5-flash as it is fast and has large context, good for fallbacks
+    # Usage of flash model as it is fast and has large context, good for fallbacks
     # Note: Requires GOOGLE_API_KEY in env
     gemini_params = {
-        "model": "gemini-2.0-flash",
+        "model": settings.gemini_model,
         "temperature": temperature,
-        "convert_system_message_to_human": True # Often needed for some LangChain/Gemini versions
+        "convert_system_message_to_human": True  # Often needed for some LangChain/Gemini versions
     }
     if max_tokens:
         gemini_params["max_output_tokens"] = max_tokens
@@ -52,7 +57,7 @@ def get_llm(temperature=0, model="gpt-3.5-turbo", max_tokens=None, tools=None):
     
     # Bind tools if provided
     if tools:
-        print(f"---LLM INIT: Binding {len(tools)} tools to both OpenAI and Gemini models---")
+        logger.debug(f"LLM INIT: Binding {len(tools)} tools to both OpenAI and Gemini models")
         openai_model = openai_model.bind_tools(tools)
         gemini_model = gemini_model.bind_tools(tools)
     
@@ -71,5 +76,6 @@ def get_langfuse_callback(session_id: str = None):
     """
     # Langfuse v3 reads secrets from env. 
     return CallbackHandler(
-        public_key=os.getenv("LANGFUSE_PUBLIC_KEY")
+        public_key=settings.langfuse_public_key
     )
+

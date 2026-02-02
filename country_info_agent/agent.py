@@ -1,7 +1,5 @@
 from langgraph.graph import StateGraph, END
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
 from country_info_agent.utils.state import AgentState
 from country_info_agent.utils.nodes import identify_intent, invoke_tool, synthesize_answer
 
@@ -33,3 +31,6 @@ def create_graph():
     workflow.add_edge("synthesize_answer", END)
     
     return workflow.compile(checkpointer=MemorySaver())
+
+# Export for langgraph.json
+graph = create_graph()

@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from country_info_agent.agent import create_graph
+from country_info_agent.config.settings import settings
 import os
 from country_info_agent.utils.common import get_langfuse_callback
 from langfuse import Langfuse, observe
@@ -41,7 +42,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

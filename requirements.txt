@@ -10,3 +10,4 @@ langfuse
 langchain-google-genai
 openai
 async-lru
+pydantic-settings
