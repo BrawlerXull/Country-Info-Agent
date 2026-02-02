@@ -19,13 +19,26 @@ app.add_middleware(
 agent_graph = create_graph()
 
 
+from langchain_core.messages import HumanMessage
+from typing import Optional
+
+# ... imports ...
+
 class QueryRequest(BaseModel):
     question: str
+    session_id: str = "default"
 
 class QueryResponse(BaseModel):
     answer: str
     intent: str = None
-    country: str = None
+    countries: list = []
+
+from app.utils import get_langfuse_callback
+from langfuse import Langfuse
+
+# Initialize global Langfuse client to capture any implicit traces and suppress "No Langfuse client" warnings
+# This reads from environment variables (LANGFUSE_PUBLIC_KEY, etc.)
+langfuse_client = Langfuse()
 
 @app.post("/query", response_model=QueryResponse)
 async def query_agent(request: QueryRequest):
@@ -33,16 +46,39 @@ async def query_agent(request: QueryRequest):
     Endpoint to query the agent.
     """
     try:
-        # Initial state
-        initial_state = {"question": request.question}
+        # Initialize Langfuse callback
+        langfuse_handler = get_langfuse_callback(session_id=request.session_id)
+        
+        # Config for the thread and callbacks
+        config = {
+            "configurable": {"thread_id": request.session_id},
+            "callbacks": [langfuse_handler],
+            "tags": ["country-agent", "production"],
+            "metadata": {
+                "session_id": request.session_id,
+                "source": "web-ui",
+                "user_agent": "fastapi"
+            }
+        }
+        
+        # Initial state (LangGraph handles checking for existing state via thread_id)
+        # We pass the new message to be added to history
+        initial_state = {
+            "question": request.question,
+            "messages": [HumanMessage(content=request.question)]
+        }
         
         # Invoke the graph
-        result = agent_graph.invoke(initial_state)
+        # For stateful graphs, we typically pass the *update* to the state.
+        # Since 'messages' is Annotated with add_messages, passing a new message works.
+        # But our custom node reads "question".
+        
+        result = agent_graph.invoke(initial_state, config=config)
         
         return QueryResponse(
             answer=result.get("final_answer", "No answer generated."),
             intent=result.get("intent"),
-            country=result.get("country")
+            countries=result.get("countries", [])
         )
     except ValueError as e:
         # Handle missing API key or configuration errors

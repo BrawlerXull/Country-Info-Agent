@@ -50,6 +50,10 @@
     <button onclick="sendMessage()">Send</button>
 
     <script>
+      // Generate a random session ID
+      const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      console.log("Session ID:", sessionId);
+
       async function sendMessage() {
         const input = document.getElementById("user-input");
         const chatBox = document.getElementById("chat-box");
@@ -65,15 +69,16 @@
           const response = await fetch("http://localhost:8000/query", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ question: text }),
+            body: JSON.stringify({ question: text, session_id: sessionId }),
           });
 
           const data = await response.json();
 
           if (response.ok) {
             chatBox.innerHTML += `<div class="message agent"><strong>Agent:</strong> ${data.answer}</div>`;
-            if (data.country) {
-              chatBox.innerHTML += `<div class="message agent" style="font-size: 0.8em; color: gray;">(Context: ${data.country}, Intent: ${data.intent})</div>`;
+            if (data.countries && data.countries.length > 0) {
+              const contextStr = data.countries.join(", ");
+              chatBox.innerHTML += `<div class="message agent" style="font-size: 0.8em; color: gray;">(Context: ${contextStr}, Intent: ${data.intent})</div>`;
             }
           } else {
             chatBox.innerHTML += `<div class="message agent" style="color: red;">Error: ${data.detail || "Unknown error"}</div>`;

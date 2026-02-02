@@ -1,4 +1,5 @@
 from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.memory import MemorySaver
 from app.state import AgentState
 from app.nodes import identify_intent, invoke_tool, synthesize_answer
 
@@ -29,4 +30,4 @@ def create_graph():
     # Synthesize Answer -> End
     workflow.add_edge("synthesize_answer", END)
     
-    return workflow.compile()
+    return workflow.compile(checkpointer=MemorySaver())
