@@ -9,6 +9,7 @@ COPY . .
 
 # Render injects PORT env var; default to 8000 for local dev
 ENV PORT=8000
-EXPOSE ${PORT}
+EXPOSE 8000
 
-CMD uvicorn country_info_agent.api:app --host 0.0.0.0 --port ${PORT}
+# Use shell form with exec for proper signal handling and variable expansion
+CMD ["sh", "-c", "exec uvicorn country_info_agent.api:app --host 0.0.0.0 --port ${PORT}"]

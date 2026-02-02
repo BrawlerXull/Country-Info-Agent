@@ -9,3 +9,4 @@ pytest
 langfuse
 langchain-google-genai
 openai
+async-lru
