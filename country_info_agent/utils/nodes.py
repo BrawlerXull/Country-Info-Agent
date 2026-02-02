@@ -6,6 +6,11 @@ from langchain_core.runnables.config import RunnableConfig
 from country_info_agent.utils.state import AgentState
 from country_info_agent.utils.tools import fetch_country_info
 from country_info_agent.utils.common import get_llm
+from country_info_agent.prompts.agent_prompts import (
+    IDENTIFY_INTENT_SYSTEM_PROMPT,
+    GREETING_SYSTEM_PROMPT,
+    SYNTHESIZE_ANSWER_SYSTEM_PROMPT
+)
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -26,19 +31,8 @@ async def identify_intent(state: AgentState, config: RunnableConfig):
     
     # Trim messages if needed...
     
-    system_prompt = """You are an intelligent assistant designed to identify the intent and entities from a user's query about countries.
-    
-    You have access to the conversation history. Use it to resolve references like "it", "they", "those countries", etc.
-    
-    Task:
-    1. Extract Country Names: A list of country names mentioned or referred to.
-    2. Identify Intent: What does the user want to know? 
-       Valid intents: 'get_population', 'get_capital', 'get_currency', 'get_language', 'get_flag', 'general_info', 'comparison'. 
-       If unclear or not about countries, use 'unknown'.
-    """
-    
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+        ("system", IDENTIFY_INTENT_SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="messages"),
         ("human", "{question}")
     ])
@@ -92,14 +86,7 @@ async def synthesize_answer(state: AgentState, config: RunnableConfig):
     if intent == "unknown":
         # Generate a friendly response using LLM instead of hardcoding
         greeting_prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are a friendly Country Information Agent. The user sent a message that is not a specific country query (like a greeting or off-topic question).
-
-Respond warmly and guide them on what you can help with:
-- Country populations, capitals, currencies, languages, flags
-- Comparisons between countries
-- General country information
-
-Keep your response concise, friendly, and helpful. Use emojis sparingly."""),
+            ("system", GREETING_SYSTEM_PROMPT),
             MessagesPlaceholder(variable_name="messages"),
             ("human", "{question}")
         ])
@@ -131,15 +118,8 @@ Keep your response concise, friendly, and helpful. Use emojis sparingly."""),
         return {"final_answer": "I couldn't identify any countries to look up."}
 
     # Construct prompt
-    system_prompt = """You are a helpful assistant. Answer the user's question using the provided country data.
-    
-    - If the user asked for a comparison, compare the data points for the requested countries.
-    - Be accurate and concise.
-    - Context: {data}
-    """
-    
     prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+        ("system", SYNTHESIZE_ANSWER_SYSTEM_PROMPT),
         MessagesPlaceholder(variable_name="messages"),
         ("human", "{question}")
     ])
