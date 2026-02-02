@@ -34,31 +34,44 @@ class QueryResponse(BaseModel):
     countries: list = []
 
 from app.utils import get_langfuse_callback
-from langfuse import Langfuse
+from langfuse import Langfuse, observe
+from langfuse.langchain import CallbackHandler
 
 # Initialize global Langfuse client to capture any implicit traces and suppress "No Langfuse client" warnings
 # This reads from environment variables (LANGFUSE_PUBLIC_KEY, etc.)
 langfuse_client = Langfuse()
 
 @app.post("/query", response_model=QueryResponse)
+@observe(as_type="generation") # Use generation or trace, generation lets us see the input/output easily in the table
 async def query_agent(request: QueryRequest):
     """
     Endpoint to query the agent.
     """
     try:
-        # Initialize Langfuse callback
-        langfuse_handler = get_langfuse_callback(session_id=request.session_id)
+        # 1. explicitely set session_id on the current trace
+        langfuse_client.update_current_trace(
+            session_id=request.session_id,
+            tags=["country-agent", "production"],
+            metadata={
+                "source": "web-ui",
+                "user_agent": "fastapi"
+            }
+        )
+        
+        # 2. Get the current trace ID matching this observation
+        trace_id = langfuse_client.get_current_trace_id()
+        
+        # 3. Initialize Langfuse callback linked to this trace
+        # We handle public_key loading via env or helper
+        langfuse_handler = CallbackHandler(
+             public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+             trace_context={"trace_id": trace_id}
+        )
         
         # Config for the thread and callbacks
         config = {
             "configurable": {"thread_id": request.session_id},
-            "callbacks": [langfuse_handler],
-            "tags": ["country-agent", "production"],
-            "metadata": {
-                "session_id": request.session_id,
-                "source": "web-ui",
-                "user_agent": "fastapi"
-            }
+            "callbacks": [langfuse_handler]
         }
         
         # Initial state (LangGraph handles checking for existing state via thread_id)

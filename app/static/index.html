@@ -48,11 +48,20 @@
       placeholder="Ask about a country (e.g. Population of France?)"
     />
     <button onclick="sendMessage()">Send</button>
+    <button onclick="startNewSession()" style="background-color: #f0f0f0; margin-left: 10px;">New Session</button>
 
     <script>
       // Generate a random session ID
-      const sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+      let sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
       console.log("Session ID:", sessionId);
+
+      function startNewSession() {
+          sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
+          console.log("New Session ID:", sessionId);
+          
+          document.getElementById("chat-box").innerHTML = '<div class="message agent" style="font-style: italic;">System: New session started.</div>';
+          document.getElementById("user-input").value = "";
+      }
 
       async function sendMessage() {
         const input = document.getElementById("user-input");
