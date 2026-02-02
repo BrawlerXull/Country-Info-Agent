@@ -75,6 +75,11 @@ country-info-agent/
 │       ├── nodes.py          # Graph nodes (intent, tool, synthesis)
 │       ├── state.py          # AgentState TypedDict
 │       └── tools.py          # REST Countries API tool (cached)
+├── docs/                     # 📚 Detailed documentation
+│   ├── MEMORY_MANAGEMENT.md  # State & checkpointer options
+│   ├── OBSERVABILITY.md      # Langfuse session tracing
+│   ├── LLM_FALLBACK.md       # OpenAI → Gemini fallback
+│   └── CONCURRENCY.md        # Async I/O & request handling
 ├── langgraph.json            # LangGraph configuration
 ├── render.yaml               # Render deployment config
 ├── Dockerfile
@@ -134,32 +139,36 @@ docker run -p 8000:8000 --env-file .env country-info-agent
 
 ## 📊 Production Design Decisions
 
-| Feature               | Implementation                        | Rationale                          |
-| --------------------- | ------------------------------------- | ---------------------------------- |
-| **Async I/O**         | `async/await` + `httpx.AsyncClient`   | Non-blocking for high concurrency  |
-| **LLM Fallback**      | OpenAI → Gemini                       | Resilience against API failures    |
-| **Structured Output** | Pydantic + `with_structured_output()` | Robust JSON parsing, no regex      |
-| **API Caching**       | `@alru_cache(maxsize=128)`            | Reduce API calls, faster responses |
-| **Observability**     | Langfuse integration                  | Full trace visibility              |
-| **Error Handling**    | Global exception handlers             | Consistent JSON error responses    |
-| **Logging**           | Structured logging with timestamps    | Production debugging               |
+| Feature               | Implementation                        | Documentation                                        |
+| --------------------- | ------------------------------------- | ---------------------------------------------------- |
+| **Memory Management** | MemorySaver (in-memory)               | [📄 MEMORY_MANAGEMENT.md](docs/MEMORY_MANAGEMENT.md) |
+| **LLM Fallback**      | OpenAI → Gemini                       | [📄 LLM_FALLBACK.md](docs/LLM_FALLBACK.md)           |
+| **Observability**     | Langfuse session tracing              | [📄 OBSERVABILITY.md](docs/OBSERVABILITY.md)         |
+| **Concurrency**       | Async I/O with uvicorn                | [📄 CONCURRENCY.md](docs/CONCURRENCY.md)             |
+| **Structured Output** | Pydantic + `with_structured_output()` | Robust JSON parsing                                  |
+| **API Caching**       | `@alru_cache(maxsize=128)`            | Reduce API calls                                     |
+| **Error Handling**    | Global exception handlers             | Consistent JSON errors                               |
 
 ## 🧪 Example Queries
 
-| Query                                | Intent           | Response                           |
-| ------------------------------------ | ---------------- | ---------------------------------- |
-| "What is the population of Germany?" | `get_population` | Germany has ~83 million people     |
-| "What currency does Japan use?"      | `get_currency`   | Japanese Yen (¥)                   |
-| "Compare USA and China population"   | `comparison`     | Detailed comparison                |
-| "Hello!"                             | `unknown`        | Friendly greeting with usage guide |
-| "What about Narnia?"                 | `general_info`   | Country not found error            |
+| Query                                | Intent           | Response                       |
+| ------------------------------------ | ---------------- | ------------------------------ |
+| "What is the population of Germany?" | `get_population` | Germany has ~83 million people |
+| "What currency does Japan use?"      | `get_currency`   | Japanese Yen (¥)               |
+| "Compare USA and China population"   | `comparison`     | Detailed comparison            |
+| "Hello!"                             | `unknown`        | AI-generated friendly greeting |
+| "What about Narnia?"                 | `general_info`   | Country not found error        |
 
 ## ⚠️ Known Limitations
 
-1. **In-Memory Checkpointer**: Uses `MemorySaver` - state is lost on restart. For production, use `PostgresSaver`.
-2. **Single Instance**: Horizontal scaling requires distributed checkpointer.
-3. **API Rate Limits**: REST Countries API has no auth but may rate-limit.
-4. **LLM Dependency**: Requires valid API keys for OpenAI/Gemini.
+| Limitation          | Impact                   | Production Solution      |
+| ------------------- | ------------------------ | ------------------------ |
+| **In-Memory State** | Lost on restart          | Use PostgresSaver        |
+| **Single Instance** | Can't horizontally scale | Distributed checkpointer |
+| **API Rate Limits** | May be throttled         | Add retry logic          |
+| **LLM Costs**       | Per-request charges      | Aggressive caching       |
+
+> 📖 See [MEMORY_MANAGEMENT.md](docs/MEMORY_MANAGEMENT.md) for detailed trade-off analysis.
 
 ## 🚢 Deployment
 
@@ -204,6 +213,15 @@ docker run -d -p 8000:8000 \
 ### GET /health
 
 Returns `{"status": "ok"}` for health checks.
+
+## 📚 Documentation
+
+| Document                                          | Description                                             |
+| ------------------------------------------------- | ------------------------------------------------------- |
+| [MEMORY_MANAGEMENT.md](docs/MEMORY_MANAGEMENT.md) | State management, checkpointer options, why MemorySaver |
+| [OBSERVABILITY.md](docs/OBSERVABILITY.md)         | Langfuse integration, session tracing, debugging        |
+| [LLM_FALLBACK.md](docs/LLM_FALLBACK.md)           | OpenAI → Gemini fallback mechanism                      |
+| [CONCURRENCY.md](docs/CONCURRENCY.md)             | Async I/O, request handling, scaling options            |
 
 ## 📜 License
 
