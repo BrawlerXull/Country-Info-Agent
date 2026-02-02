@@ -8,7 +8,7 @@ from app.state import AgentState
 from app.tools import fetch_country_info
 from app.utils import get_llm
 
-def identify_intent(state: AgentState, config: RunnableConfig):
+async def identify_intent(state: AgentState, config: RunnableConfig):
     """
     Identifies the user's intent and extracts country names, resolving coreferences from history.
     """
@@ -46,7 +46,7 @@ def identify_intent(state: AgentState, config: RunnableConfig):
         # OR we just append the current question to messages. 
         # In this design, we'll assume state['messages'] has history. We pass 'question' explicitly as the latest human message.
         
-        result = chain.invoke({"messages": messages, "question": question}, config=config)
+        result = await chain.ainvoke({"messages": messages, "question": question}, config=config)
         
         countries = result.get("countries")
         if isinstance(countries, str):
@@ -56,7 +56,7 @@ def identify_intent(state: AgentState, config: RunnableConfig):
     except Exception as e:
         return {"intent": "unknown", "countries": [], "error": str(e)}
 
-def invoke_tool(state: AgentState, config: RunnableConfig):
+async def invoke_tool(state: AgentState, config: RunnableConfig):
     """
     Invokes the REST Countries API for each extracted country.
     """
@@ -73,12 +73,12 @@ def invoke_tool(state: AgentState, config: RunnableConfig):
         
         # We might want to cache or check if we already have data in context, 
         # but for simplicity, we fetch fresh data.
-        result = fetch_country_info(country)
+        result = await fetch_country_info(country)
         outputs[country] = result
         
     return {"tool_outputs": outputs}
 
-def synthesize_answer(state: AgentState, config: RunnableConfig):
+async def synthesize_answer(state: AgentState, config: RunnableConfig):
     """
     Synthesizes the answer using tool outputs and history.
     """
@@ -127,7 +127,7 @@ def synthesize_answer(state: AgentState, config: RunnableConfig):
     data_context = "\n".join([f"Data for {c}: {d}" for c, d in valid_data.items()])
     
     messages = state.get("messages", [])
-    response = chain.invoke({"data": data_context, "messages": messages, "question": question}, config=config)
+    response = await chain.ainvoke({"data": data_context, "messages": messages, "question": question}, config=config)
     
     return {
         "final_answer": response.content,

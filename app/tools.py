@@ -3,9 +3,9 @@ from typing import Dict, Any, Optional
 from langfuse import observe
 
 @observe(as_type="generation")
-def fetch_country_info(country_name: str) -> Dict[str, Any]:
+async def fetch_country_info(country_name: str) -> Dict[str, Any]:
     """
-    Fetches country information from the REST Countries API.
+    Fetches country information from the REST Countries API (Async).
     
     Args:
         country_name: The name of the country to look up.
@@ -17,11 +17,10 @@ def fetch_country_info(country_name: str) -> Dict[str, Any]:
     
     try:
         # Strategy 1: Attempt Exact Match
-        # This solves the "India" -> "British Indian Ocean Territory" issue immediately if the user types "India"
         url_exact = f"{base_url}/{country_name}?fullText=true"
         
-        with httpx.Client() as client:
-            response = client.get(url_exact, timeout=10.0)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url_exact, timeout=10.0)
             
             if response.status_code == 200:
                 data = response.json()
@@ -29,10 +28,8 @@ def fetch_country_info(country_name: str) -> Dict[str, Any]:
                      return {"status": "success", "data": data[0]}
 
             # Strategy 2: Fallback to Partial Match with Intelligent Filtering
-            # If exact match fails (e.g. "USA" might not match unless it's an alt spelling, or user made a typo),
-            # we try the standard search.
             url_partial = f"{base_url}/{country_name}"
-            response = client.get(url_partial, timeout=10.0)
+            response = await client.get(url_partial, timeout=10.0)
             
             if response.status_code == 200:
                 data = response.json()

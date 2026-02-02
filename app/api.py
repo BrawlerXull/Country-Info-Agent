@@ -86,7 +86,7 @@ async def query_agent(request: QueryRequest):
         # Since 'messages' is Annotated with add_messages, passing a new message works.
         # But our custom node reads "question".
         
-        result = agent_graph.invoke(initial_state, config=config)
+        result = await agent_graph.ainvoke(initial_state, config=config)
         
         return QueryResponse(
             answer=result.get("final_answer", "No answer generated."),
