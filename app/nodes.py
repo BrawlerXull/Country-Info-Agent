@@ -8,28 +8,32 @@ from app.state import AgentState
 from app.tools import fetch_country_info
 from app.utils import get_llm
 
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+class IntentSchema(BaseModel):
+    intent: str = Field(description="The user's intent. Must be one of: 'get_population', 'get_capital', 'get_currency', 'get_language', 'get_flag', 'general_info', 'comparison', 'unknown'")
+    countries: List[str] = Field(description="List of country names mentioned. Empty if none found.")
+
 async def identify_intent(state: AgentState, config: RunnableConfig):
     """
-    Identifies the user's intent and extracts country names, resolving coreferences from history.
+    Identifies the user's intent and extracts country names using Structured Output (Pydantic).
     """
     question = state["question"]
     messages = state.get("messages", [])
     llm = get_llm()
     
-    # Trim messages to keep context window manageable if needed, 
-    # but for this simple agent, last few messages are enough.
-    # We pass the history so the LLM can resolve "those countries", "it", "them".
+    # Trim messages if needed...
     
     system_prompt = """You are an intelligent assistant designed to identify the intent and entities from a user's query about countries.
     
     You have access to the conversation history. Use it to resolve references like "it", "they", "those countries", etc.
     
-    Extract the following:
-    1. Countries: A list of country names mentioned or referred to. If comparing, list all involved.
-    2. Intent: What the user wants to know. Examples: 'get_population', 'get_capital', 'get_currency', 'get_language', 'get_flag', 'general_info', 'comparison'. 
-       If the query is not about a country or unclear, return "unknown".
-    
-    Return the output as a JSON object with keys "countries" (list of strings) and "intent" (string).
+    Task:
+    1. Extract Country Names: A list of country names mentioned or referred to.
+    2. Identify Intent: What does the user want to know? 
+       Valid intents: 'get_population', 'get_capital', 'get_currency', 'get_language', 'get_flag', 'general_info', 'comparison'. 
+       If unclear or not about countries, use 'unknown'.
     """
     
     prompt = ChatPromptTemplate.from_messages([
@@ -38,21 +42,15 @@ async def identify_intent(state: AgentState, config: RunnableConfig):
         ("human", "{question}")
     ])
     
-    chain = prompt | llm | JsonOutputParser()
+    # Use with_structured_output to force valid JSON matching our schema
+    structured_llm = llm.with_structured_output(IntentSchema)
+    chain = prompt | structured_llm
     
     try:
-        # We pass the full history (messages) plus the new question as the latest user input is often separate in LangGraph 
-        # but here 'messages' usually contains the history *excluding* current input if we formatted it that way,
-        # OR we just append the current question to messages. 
-        # In this design, we'll assume state['messages'] has history. We pass 'question' explicitly as the latest human message.
+        # invoke/ainvoke now returns an IntentSchema object directly
+        result: IntentSchema = await chain.ainvoke({"messages": messages, "question": question}, config=config)
         
-        result = await chain.ainvoke({"messages": messages, "question": question}, config=config)
-        
-        countries = result.get("countries")
-        if isinstance(countries, str):
-            countries = [countries]
-            
-        return {"intent": result.get("intent"), "countries": countries}
+        return {"intent": result.intent, "countries": result.countries}
     except Exception as e:
         return {"intent": "unknown", "countries": [], "error": str(e)}
 

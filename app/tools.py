@@ -1,7 +1,9 @@
 import httpx
 from typing import Dict, Any, Optional
 from langfuse import observe
+from async_lru import alru_cache
 
+@alru_cache(maxsize=128)
 @observe(as_type="generation")
 async def fetch_country_info(country_name: str) -> Dict[str, Any]:
     """
