@@ -7,3 +7,5 @@ httpx
 python-dotenv
 pytest
 langfuse
+langchain-google-genai
+openai
