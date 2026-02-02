@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Country Info Agent</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      #chat-box {
+        border: 1px solid #ccc;
+        padding: 20px;
+        height: 400px;
+        overflow-y: scroll;
+        margin-bottom: 20px;
+      }
+      .message {
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      .user {
+        background-color: #e3f2fd;
+        text-align: right;
+      }
+      .agent {
+        background-color: #f5f5f5;
+      }
+      input {
+        width: 70%;
+        padding: 10px;
+      }
+      button {
+        padding: 10px 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Country Information Agent</h1>
+    <div id="chat-box"></div>
+    <input
+      type="text"
+      id="user-input"
+      placeholder="Ask about a country (e.g. Population of France?)"
+    />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+      async function sendMessage() {
+        const input = document.getElementById("user-input");
+        const chatBox = document.getElementById("chat-box");
+        const text = input.value.trim();
+
+        if (!text) return;
+
+        // Add user message
+        chatBox.innerHTML += `<div class="message user"><strong>You:</strong> ${text}</div>`;
+        input.value = "";
+
+        try {
+          const response = await fetch("http://localhost:8000/query", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: text }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            chatBox.innerHTML += `<div class="message agent"><strong>Agent:</strong> ${data.answer}</div>`;
+            if (data.country) {
+              chatBox.innerHTML += `<div class="message agent" style="font-size: 0.8em; color: gray;">(Context: ${data.country}, Intent: ${data.intent})</div>`;
+            }
+          } else {
+            chatBox.innerHTML += `<div class="message agent" style="color: red;">Error: ${data.detail || "Unknown error"}</div>`;
+          }
+        } catch (e) {
+          chatBox.innerHTML += `<div class="message agent" style="color: red;">Network Error: ${e.message}</div>`;
+        }
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      document
+        .getElementById("user-input")
+        .addEventListener("keypress", function (e) {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+    </script>
+  </body>
+</html>
