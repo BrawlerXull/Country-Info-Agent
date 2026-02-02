@@ -91,7 +91,29 @@ async def synthesize_answer(state: AgentState, config: RunnableConfig):
     llm = get_llm()
     
     if intent == "unknown":
-        return {"final_answer": "I'm sorry, I couldn't understand which country you are asking about, or the query specific to countries was unclear."}
+        # Generate a friendly response using LLM instead of hardcoding
+        greeting_prompt = ChatPromptTemplate.from_messages([
+            ("system", """You are a friendly Country Information Agent. The user sent a message that is not a specific country query (like a greeting or off-topic question).
+
+Respond warmly and guide them on what you can help with:
+- Country populations, capitals, currencies, languages, flags
+- Comparisons between countries
+- General country information
+
+Keep your response concise, friendly, and helpful. Use emojis sparingly."""),
+            MessagesPlaceholder(variable_name="messages"),
+            ("human", "{question}")
+        ])
+        
+        greeting_chain = greeting_prompt | llm
+        messages = state.get("messages", [])
+        
+        try:
+            response = await greeting_chain.ainvoke({"messages": messages, "question": question}, config=config)
+            return {"final_answer": response.content, "messages": [AIMessage(content=response.content)]}
+        except Exception as e:
+            logger.error(f"Error generating greeting response: {e}")
+            return {"final_answer": "Hello! I'm your Country Information Agent. Ask me about any country - population, capital, currency, and more!"}
         
     # Check if we have valid data
     valid_data = {}
