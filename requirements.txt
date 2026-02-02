@@ -6,6 +6,7 @@ langchain-openai
 httpx
 python-dotenv
 pytest
+pytest-asyncio
 langfuse
 langchain-google-genai
 openai

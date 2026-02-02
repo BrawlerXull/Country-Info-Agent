@@ -68,6 +68,8 @@ country-info-agent/
 ├── country_info_agent/
 │   ├── agent.py              # LangGraph workflow definition
 │   ├── api.py                # FastAPI endpoints + Langfuse tracing
+│   ├── config/               # Centralized configuration
+│   │   └── settings.py       # Pydantic Settings (env-driven config)
 │   ├── static/
 │   │   └── index.html        # Chat UI
 │   └── utils/
@@ -75,6 +77,12 @@ country-info-agent/
 │       ├── nodes.py          # Graph nodes (intent, tool, synthesis)
 │       ├── state.py          # AgentState TypedDict
 │       └── tools.py          # REST Countries API tool (cached)
+├── tests/                    # 🧪 Test suite
+│   ├── conftest.py           # Shared pytest fixtures
+│   ├── test_api.py           # FastAPI endpoint tests
+│   ├── test_nodes.py         # LangGraph node tests
+│   ├── test_settings.py      # Configuration tests
+│   └── test_tools.py         # REST Countries API tests
 ├── docs/                     # 📚 Detailed documentation
 │   ├── MEMORY_MANAGEMENT.md  # State & checkpointer options
 │   ├── OBSERVABILITY.md      # Langfuse session tracing
@@ -125,6 +133,16 @@ Open **http://localhost:8000** in your browser.
 ```bash
 docker build -t country-info-agent .
 docker run -p 8000:8000 --env-file .env country-info-agent
+```
+
+### 🧪 Running Tests
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage (requires pytest-cov)
+pytest tests/ --cov=country_info_agent --cov-report=term-missing
 ```
 
 ## 🔧 Environment Variables
