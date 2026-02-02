@@ -14,7 +14,7 @@ class TestSettings:
         from country_info_agent.config.settings import Settings
         
         settings = Settings()
-        assert settings.openai_model == "gpt-3.5-turbo"
+        assert settings.openai_model == "gpt-4o-mini"
         assert settings.gemini_model == "gemini-2.0-flash"
         assert settings.rest_countries_base_url == "https://restcountries.com/v3.1/name"
         assert settings.cors_origins == ["*"]

@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     
     # OpenAI Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
-    openai_model: str = "gpt-3.5-turbo"
+    openai_model: str = "gpt-4o-mini"
     
     # Google Gemini Configuration (fallback)
     google_api_key: Optional[str] = os.getenv("GOOGLE_API_KEY")
