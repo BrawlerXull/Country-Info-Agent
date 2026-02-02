@@ -7,6 +7,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Run tests during build - build fails if tests fail
+RUN python -m pytest tests/ -v --tb=short
+
 # Render injects PORT env var; default to 8000 for local dev
 ENV PORT=8000
 EXPOSE 8000
