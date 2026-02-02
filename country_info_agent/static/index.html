@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Country Info Agent</title>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
       body {
         font-family: sans-serif;
@@ -30,6 +32,25 @@
       .agent {
         background-color: #f5f5f5;
       }
+      /* Markdown styling for agent messages */
+      .agent strong, .agent b {
+        font-weight: bold;
+      }
+      .agent ul, .agent ol {
+        margin: 8px 0;
+        padding-left: 20px;
+      }
+      .agent li {
+        margin: 4px 0;
+      }
+      .agent p {
+        margin: 8px 0;
+      }
+      .agent code {
+        background-color: #e0e0e0;
+        padding: 2px 6px;
+        border-radius: 3px;
+      }
       input {
         width: 70%;
         padding: 10px;
@@ -55,6 +76,17 @@
       let sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
       console.log("Session ID:", sessionId);
 
+      // Configure marked for safe rendering
+      marked.setOptions({
+        breaks: true,  // Convert \n to <br>
+        gfm: true      // GitHub Flavored Markdown
+      });
+
+      // Helper function to parse markdown
+      function parseMarkdown(text) {
+        return marked.parse(text);
+      }
+
       function startNewSession() {
           sessionId = 'session_' + Math.random().toString(36).substr(2, 9);
           console.log("New Session ID:", sessionId);
@@ -70,7 +102,7 @@
 
         if (!text) return;
 
-        // Add user message
+        // Add user message (no markdown parsing for user input)
         chatBox.innerHTML += `<div class="message user"><strong>You:</strong> ${text}</div>`;
         input.value = "";
 
@@ -84,7 +116,9 @@
           const data = await response.json();
 
           if (response.ok) {
-            chatBox.innerHTML += `<div class="message agent"><strong>Agent:</strong> ${data.answer}</div>`;
+            // Parse markdown in the agent's answer
+            const parsedAnswer = parseMarkdown(data.answer);
+            chatBox.innerHTML += `<div class="message agent"><strong>Agent:</strong> ${parsedAnswer}</div>`;
             if (data.countries && data.countries.length > 0) {
               const contextStr = data.countries.join(", ");
               chatBox.innerHTML += `<div class="message agent" style="font-size: 0.8em; color: gray;">(Context: ${contextStr}, Intent: ${data.intent})</div>`;
